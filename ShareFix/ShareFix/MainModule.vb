@@ -71,8 +71,30 @@ Module MainModule
   End Sub
 
   Private Sub ClearOldValues()
+    ' Clear HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NetBIOS\Linkage
+    Dim linkage = Registry.LocalMachine.OpenSubKey("SYSTEM\CurrentControlSet\Services\NetBIOS\Linkage", True)
+    Console.WriteLine("Clearing key HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NetBIOS\Linkage")
+
+    linkage.SetValue("Bind", New String() {}, RegistryValueKind.MultiString)
+    Console.WriteLine("Cleared Bind")
+    linkage.SetValue("Export", New String() {}, RegistryValueKind.MultiString)
+    Console.WriteLine("Cleared Export")
+    linkage.SetValue("Route", New String() {}, RegistryValueKind.MultiString)
+    Console.WriteLine("Cleared Route")
+
+    ' Clear HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Linkage
+    linkage = Registry.LocalMachine.OpenSubKey("SYSTEM\CurrentControlSet\Services\Tcpip\Linkage", True)
+    Console.WriteLine("Clearing key HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Linkage")
+
+    linkage.SetValue("Bind", New String() {}, RegistryValueKind.MultiString)
+    Console.WriteLine("Cleared Bind")
+    linkage.SetValue("Export", New String() {}, RegistryValueKind.MultiString)
+    Console.WriteLine("Cleared Export")
+    linkage.SetValue("Route", New String() {}, RegistryValueKind.MultiString)
+    Console.WriteLine("Cleared Route")
+
     ' Clear HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NetBT\Linkage
-    Dim linkage = Registry.LocalMachine.OpenSubKey("SYSTEM\CurrentControlSet\Services\NetBT\Linkage", True)
+    linkage = Registry.LocalMachine.OpenSubKey("SYSTEM\CurrentControlSet\Services\NetBT\Linkage", True)
     Console.WriteLine("Clearing key HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NetBT\Linkage")
 
     linkage.SetValue("Bind", New String() {}, RegistryValueKind.MultiString)
@@ -85,6 +107,7 @@ Module MainModule
     ' Clear HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\Linkage
     linkage = Registry.LocalMachine.OpenSubKey("SYSTEM\CurrentControlSet\Services\LanmanServer\Linkage", True)
     Console.WriteLine("Clearing key HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\Linkage")
+
     linkage.SetValue("Bind", New String() {}, RegistryValueKind.MultiString)
     Console.WriteLine("Cleared Bind")
     linkage.SetValue("Export", New String() {}, RegistryValueKind.MultiString)
@@ -95,6 +118,7 @@ Module MainModule
     ' Clear HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Linkage
     linkage = Registry.LocalMachine.OpenSubKey("SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Linkage", True)
     Console.WriteLine("Clearing key HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Linkage")
+
     linkage.SetValue("Bind", New String() {}, RegistryValueKind.MultiString)
     Console.WriteLine("Cleared Bind")
     linkage.SetValue("Export", New String() {}, RegistryValueKind.MultiString)
@@ -110,14 +134,114 @@ Module MainModule
 
     Dim newEntry = String.Empty
 
-    ' Fix HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NetBT\Linkage
-    Dim linkage = Registry.LocalMachine.OpenSubKey("SYSTEM\CurrentControlSet\Services\NetBT\Linkage", True)
+    ' Fix HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NetBIOS\Linkage
+    Dim linkage = Registry.LocalMachine.OpenSubKey("SYSTEM\CurrentControlSet\Services\NetBIOS\Linkage", True)
 
-    Console.WriteLine("Fixing key HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NetBT\Linkage")
+    Console.WriteLine("Fixing key HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NetBIOS\Linkage")
 
     ' Fix Bind Value
     Dim bind = CType(linkage.GetValue("Bind"), String()).ToList
     Dim bindCount = bind.Count
+
+    newEntry = $"\Device\NetBT_Tcpip_{interfaceGuid}"
+    If Not bind.Contains(newEntry) Then bind.Add(newEntry)
+        newEntry = $"\Device\NetBT_Tcpip6_{interfaceGuid}"
+        If Not bind.Contains(newEntry) Then bind.Add(newEntry)
+
+    If bindCount <> bind.Count Then
+      linkage.SetValue("Bind", bind.ToArray, RegistryValueKind.MultiString)
+      Console.WriteLine("Fixed Bind value")
+    Else
+      Console.WriteLine("Bind value already fixed")
+    End If
+
+    ' Fix Export Value
+    Dim export = CType(linkage.GetValue("Export"), String()).ToList
+    Dim exportCount = export.Count
+
+    newEntry = $"\Device\NetBIOS_NetBT_Tcpip_{interfaceGuid}"
+    If Not export.Contains(newEntry) Then export.Add(newEntry)
+    newEntry = $"\Device\NetBIOS_NetBT_Tcpip6_{interfaceGuid}"
+    If Not export.Contains(newEntry) Then export.Add(newEntry)
+
+    If exportCount <> export.Count Then
+      linkage.SetValue("Export", export.ToArray, RegistryValueKind.MultiString)
+      Console.WriteLine("Fixed Export value")
+    Else
+      Console.WriteLine("Export value already fixed")
+    End If
+
+    ' Fix Route Value
+    Dim route = CType(linkage.GetValue("Route"), String()).ToList
+    Dim routeCount = route.Count
+
+    newEntry = $"""NetBT"" ""Tcpip"" ""{interfaceGuid}"""
+    If Not route.Contains(newEntry) Then route.Add(newEntry)
+    newEntry = $"""NetBT"" ""Tcpip6"" ""{interfaceGuid}"""
+    If Not route.Contains(newEntry) Then route.Add(newEntry)
+
+    If routeCount <> route.Count Then
+      linkage.SetValue("Route", route.ToArray, RegistryValueKind.MultiString)
+      Console.WriteLine("Fixed Route value")
+    Else
+      Console.WriteLine("Route value already fixed")
+    End If
+
+    ' Fix HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Linkage
+    linkage = Registry.LocalMachine.OpenSubKey("SYSTEM\CurrentControlSet\Services\Tcpip\Linkage", True)
+
+    Console.WriteLine("Fixing key HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Tcpip\Linkage")
+
+    ' Fix Bind Value
+    bind = CType(linkage.GetValue("Bind"), String()).ToList
+    bindCount = bind.Count
+
+    newEntry = $"\Device\{interfaceGuid}"
+    If Not bind.Contains(newEntry) Then bind.Add(newEntry)
+
+    If bindCount <> bind.Count Then
+      linkage.SetValue("Bind", bind.ToArray, RegistryValueKind.MultiString)
+      Console.WriteLine("Fixed Bind value")
+    Else
+      Console.WriteLine("Bind value already fixed")
+    End If
+
+    ' Fix Export Value
+    export = CType(linkage.GetValue("Export"), String()).ToList
+    exportCount = export.Count
+
+    newEntry = $"\Device\Tcpip_{interfaceGuid}"
+    If Not export.Contains(newEntry) Then export.Add(newEntry)
+
+    If exportCount <> export.Count Then
+      linkage.SetValue("Export", export.ToArray, RegistryValueKind.MultiString)
+      Console.WriteLine("Fixed Export value")
+    Else
+      Console.WriteLine("Export value already fixed")
+    End If
+
+    ' Fix Route Value
+    route = CType(linkage.GetValue("Route"), String()).ToList
+    routeCount = route.Count
+
+    newEntry = $"""{interfaceGuid}"""
+    If Not route.Contains(newEntry) Then route.Add(newEntry)
+
+    If routeCount <> route.Count Then
+      linkage.SetValue("Route", route.ToArray, RegistryValueKind.MultiString)
+      Console.WriteLine("Fixed Route value")
+    Else
+      Console.WriteLine("Route value already fixed")
+    End If
+
+    ' Fix HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NetBT\Linkage
+    linkage = Registry.LocalMachine.OpenSubKey("SYSTEM\CurrentControlSet\Services\NetBT\Linkage", True)
+
+    Console.WriteLine("Fixing key HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\NetBT\Linkage")
+
+    ' Fix Bind Value
+    bind = CType(linkage.GetValue("Bind"), String()).ToList
+    bindCount = bind.Count
 
     newEntry = $"\Device\Tcpip_{interfaceGuid}"
     If Not bind.Contains(newEntry) Then bind.Add(newEntry)
@@ -132,8 +256,8 @@ Module MainModule
     End If
 
     ' Fix Export Value
-    Dim export = CType(linkage.GetValue("Export"), String()).ToList
-    Dim exportCount = export.Count
+    export = CType(linkage.GetValue("Export"), String()).ToList
+    exportCount = export.Count
 
     newEntry = $"\Device\NetBT_Tcpip_{interfaceGuid}"
     If Not export.Contains(newEntry) Then export.Add(newEntry)
@@ -148,8 +272,8 @@ Module MainModule
     End If
 
     ' Fix Route Value
-    Dim route = CType(linkage.GetValue("Route"), String()).ToList
-    Dim routeCount = route.Count
+    route = CType(linkage.GetValue("Route"), String()).ToList
+    routeCount = route.Count
 
     newEntry = $"""Tcpip"" ""{interfaceGuid}"""
     If Not route.Contains(newEntry) Then route.Add(newEntry)
@@ -304,5 +428,6 @@ Module MainModule
     Else
       Console.WriteLine("Route value already fixed")
     End If
+    
   End Sub
 End Module
